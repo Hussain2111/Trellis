@@ -5,7 +5,7 @@ authors: code work is known the moment it lands, but infrastructure work —
 a token regenerated, a migration run, a workflow enabled — happens in dashboards
 this file cannot see, and only enters it when someone says so.
 
-Last updated: 2026-08-27.
+Last updated: 2026-09-12. Code unchanged since 2026-08-27.
 
 ## Built and proven against real data
 
@@ -27,17 +27,23 @@ reads correctly without them:
 `/settings` says **"cannot read"** against the request counts if this has not
 been run. That is the check.
 
-## The one with a deadline
+## The one with a deadline: ~19 October 2026
 
-**Nothing refreshes the Instagram access token.** It had 56 days remaining when
-it was regenerated during Task 2.1, nothing has extended it since, and
-`token.yml` — the weekly refresh the plan calls for — was never written.
+**Nothing refreshes the Instagram access token.** `probe:graph` reported **56
+days remaining** on 2026-08-24 (the Stage 2 probe commit, `589336f`). 56 days
+from there is **2026-10-19** — about **five weeks** from 2026-09-12.
 
-When it expires the daily sync starts failing and **nothing announces it**: the
-expiry is visible only by running `npm run probe:graph` by hand. `/settings`
-shows the scopes but not the expiry date.
+`token.yml`, the weekly refresh the plan calls for, was never written. When the
+token expires the daily sync starts failing and **nothing announces it**: the
+expiry is visible only by running `npm run probe:graph` by hand, and `/settings`
+shows the seven scopes but not the date.
 
-Run `npm run probe:graph` now to see how long is left.
+**That date assumes nothing refreshed it since.** Confirm with
+`npm run probe:graph` before trusting the arithmetic — and if the number comes
+back lower than expected, the assumption was wrong, not the maths.
+
+Two things make this safe rather than merely known: `token.yml`, and putting the
+expiry on `/settings` next to the scopes so it is visible without a terminal.
 
 ## Planned, not built
 
