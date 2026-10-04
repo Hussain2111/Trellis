@@ -77,6 +77,7 @@ describe('Google final-answer request serialization', () => {
       ...chatGenerationOptions<typeof tools>(4, 'Answer from evidence.'),
     });
     expect(requests).toHaveLength(4);
+    expect(requests[0]?.toolConfig?.functionCallingConfig?.mode).toBe('ANY');
     expect(
       requests
         .slice(0, 3)

@@ -61,6 +61,7 @@ describe('chat lookup and answering budget through the installed SDK', () => {
       const model: MockLanguageModelV3 = new MockLanguageModelV3({
         doGenerate: async (options) => {
           const index = model.doGenerateCalls.length - 1;
+          if (index === 0) expect(options.toolChoice).toEqual({ type: 'required' });
           if (index < budget - 1) return lookup(index);
           expect(options.tools?.map((tool) => tool.name)).toEqual(['getPostsRanked']);
           expect(options.toolChoice).toEqual({ type: 'none' });

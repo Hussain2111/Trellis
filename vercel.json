@@ -2,7 +2,8 @@
   "git": {
     "deploymentEnabled": {
       "fix/chat-empty-response": false,
-      "fix/chat-google-final-step": false
+      "fix/chat-google-final-step": false,
+      "fix/chat-followup-lookups": false
     }
   },
   "crons": [

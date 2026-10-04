@@ -11,7 +11,9 @@ export function chatGenerationOptions<TOOLS extends ToolSet>(maxSteps: number, s
           toolChoice: 'none',
           system: `${system}\nThis is the final answering step. Answer the user's question using only the tool results already collected. Do not request more tools or invent figures. If the evidence is missing or insufficient, explain that plainly.`,
         }
-      : undefined;
+      : stepNumber === 0
+        ? { toolChoice: 'required' }
+        : undefined;
 
   return { stopWhen: stepCountIs(maxSteps), prepareStep };
 }
