@@ -62,7 +62,7 @@ describe('chat lookup and answering budget through the installed SDK', () => {
         doGenerate: async (options) => {
           const index = model.doGenerateCalls.length - 1;
           if (index < budget - 1) return lookup(index);
-          expect(options.tools).toBeUndefined();
+          expect(options.tools?.map((tool) => tool.name)).toEqual(['getPostsRanked']);
           expect(options.toolChoice).toEqual({ type: 'none' });
           expect(JSON.stringify(options.prompt)).toContain('1248');
           expect(JSON.stringify(options.prompt)).toContain('final answering step');
@@ -167,7 +167,7 @@ describe('chat lookup and answering budget through the installed SDK', () => {
     const budget = Math.min(maxStepsFor(caps), tight.limit - tight.used);
     const model = new MockLanguageModelV3({
       doGenerate: async (options) => {
-        expect(options.tools).toBeUndefined();
+        expect(options.toolChoice).toEqual({ type: 'none' });
         return response(
           [{ type: 'text', text: 'I do not have enough evidence to rank your posts.' }],
           'stop',
