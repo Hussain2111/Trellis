@@ -1,7 +1,8 @@
 {
   "git": {
     "deploymentEnabled": {
-      "fix/chat-empty-response": false
+      "fix/chat-empty-response": false,
+      "fix/chat-google-final-step": false
     }
   },
   "crons": [

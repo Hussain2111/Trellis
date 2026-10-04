@@ -6,7 +6,8 @@ export function chatGenerationOptions<TOOLS extends ToolSet>(maxSteps: number, s
   const prepareStep: PrepareStepFunction<TOOLS> = ({ stepNumber }) =>
     stepNumber >= maxSteps - 1
       ? {
-          activeTools: [],
+          // Keep definitions so providers such as Google serialize the explicit
+          // prohibition. With no definitions, Google's adapter omits mode NONE.
           toolChoice: 'none',
           system: `${system}\nThis is the final answering step. Answer the user's question using only the tool results already collected. Do not request more tools or invent figures. If the evidence is missing or insufficient, explain that plainly.`,
         }

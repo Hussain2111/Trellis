@@ -81,7 +81,7 @@ describe('buffered chat response and provider accounting', () => {
       expect.objectContaining({ role: 'assistant', content: '1248 views.', validation: null }),
     );
     expect(state.runs).toHaveBeenCalledWith(expect.objectContaining({ calls: 4, status: 'ok' }));
-    expect(model.doGenerateCalls.at(-1)?.tools).toBeUndefined();
+    expect(model.doGenerateCalls.at(-1)?.toolChoice).toEqual({ type: 'none' });
   });
 
   it.each(['', '99999 views.'])(
@@ -143,7 +143,7 @@ describe('buffered chat response and provider accounting', () => {
     state.resolveLanes.mockReturnValue([lane(model)]);
     expect((await POST(request())).status).toBe(200);
     expect(model.doGenerateCalls).toHaveLength(1);
-    expect(model.doGenerateCalls[0]?.tools).toBeUndefined();
+    expect(model.doGenerateCalls[0]?.toolChoice).toEqual({ type: 'none' });
     expect(state.runs).toHaveBeenCalledWith(expect.objectContaining({ calls: 1 }));
   });
 
