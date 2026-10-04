@@ -1,4 +1,4 @@
-import { generateText, stepCountIs } from 'ai';
+import { generateText } from 'ai';
 import { respond } from '@/lib/api/respond';
 import { z } from 'zod';
 import { db } from '@/lib/db/client';
@@ -20,7 +20,11 @@ import {
   quotaCaps,
   resolveLanes,
 } from '@/lib/model/provider';
-import { stripUnbackedSentences } from '@/lib/validate/numbers';
+import {
+  chatGenerationOptions,
+  chatStepDiagnostic,
+  validateChatAnswer,
+} from '@/lib/chat/generation';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -133,6 +137,8 @@ export async function POST(request: Request): Promise<Response> {
       }
 
       const started = Date.now();
+      let attemptedCalls = 0;
+      const maxSteps = Math.min(maxStepsFor(caps), headroom.limit - headroom.used);
       try {
         const result = await generateText({
           model: model.model,
@@ -143,7 +149,17 @@ export async function POST(request: Request): Promise<Response> {
           // from the per-minute limit rather than picked. A fixed 8 blew a
           // 5-a-minute budget from inside a single call, where no pre-flight
           // check can reach.
-          stopWhen: stepCountIs(maxStepsFor(caps)),
+          ...chatGenerationOptions<typeof tools>(maxSteps, system),
+          onLanguageModelCallStart: () => {
+            attemptedCalls += 1;
+          },
+          onStepEnd: (step) => {
+            console.info('[chat.step]', {
+              threadId,
+              provider: model.provider,
+              ...chatStepDiagnostic(step),
+            });
+          },
           // The SDK's default is three attempts. On a quota error that spends
           // three of the five requests a minute allows, on a call that could not
           // have succeeded — so retrying is handled here, by not doing it.
@@ -157,12 +173,19 @@ export async function POST(request: Request): Promise<Response> {
           step.toolResults.map((r) => (r as { output?: unknown }).output),
         );
 
-        const { text, dropped } = stripUnbackedSentences(result.text, evidence);
-
-        const answer =
-          text.trim().length > 0
-            ? text
-            : "I can't back that up from your data — every figure I was about to give you came from somewhere other than a query, so I've dropped it rather than show you a number I can't stand behind.";
+        const { answer, dropped, outcome, emptyBeforeValidation, validatedTextLength } =
+          validateChatAnswer(result.text, evidence);
+        console.info('[chat.response]', {
+          threadId,
+          provider: model.provider,
+          steps: result.steps.length,
+          finishReason: result.finishReason,
+          textLength: result.text.length,
+          emptyBeforeValidation,
+          validatedTextLength,
+          droppedCount: dropped.length,
+          outcome,
+        });
 
         await appendMessage({
           threadId,
@@ -213,7 +236,7 @@ export async function POST(request: Request): Promise<Response> {
             // against the limit there. Recording it as zero would let the
             // ledger drift below what is actually being enforced, which is how
             // a guard gets quietly overrun.
-            calls: 1,
+            calls: Math.max(1, attemptedCalls),
             durationMs: Date.now() - started,
           });
 
