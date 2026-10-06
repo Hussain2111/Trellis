@@ -1,0 +1,217 @@
+{
+  "status": "blocked",
+  "capturedAt": "2026-10-06T17:44:54.878921+00:00",
+  "latestPrShaAtCheck": "3a344e528f61e8a8a8c239f2352ee71570cfd191",
+  "pr": 4,
+  "prDraftAtCheck": true,
+  "githubEvidence": {
+    "deploymentRecordId": 6889782123,
+    "environment": "Preview",
+    "projectName": "trellis_v2",
+    "projectId": "prj_d51kAzxIDY6jAqRv3UL9qd8ohPS3",
+    "deploymentInspectorUrl": "https://vercel.com/hussain-9c72/trellis_v2/5Cbrf6XcJdpzzzyFoYpwgmLB32NT",
+    "deploymentUrl": "https://trellisv2-cjekr1a5x-hussain-9c72.vercel.app/",
+    "sources": [
+      "https://api.github.com/repos/Hussain2111/trellis/issues/4/comments",
+      "https://api.github.com/repos/Hussain2111/trellis/deployments/6889782123/statuses"
+    ]
+  },
+  "verification": {
+    "vercelApiVerified": false,
+    "supabaseProjectVerified": false,
+    "appRegion": null,
+    "databaseRegion": null,
+    "datasetSize": null,
+    "priorServerFlag": null,
+    "priorBrowserFlag": null,
+    "flagsChanged": false,
+    "restoration": "not needed; no flag changes were made",
+    "deploymentProtection": "Vercel authentication redirect observed: HTTP 302 to vercel.com/sso-api; no authenticated browser state available"
+  },
+  "access": {
+    "vercelToolsCallable": false,
+    "supabaseToolsCallable": false,
+    "vercelAuthAvailable": false,
+    "supabaseAuthAvailable": false,
+    "savedExactHostNetworkDraft": true,
+    "initialTransportFailure": "proxy_connect_403",
+    "networkRuntimeConnectivityObserved": true,
+    "networkDraftPublicationVerified": false,
+    "authenticatedPreviewBrowserStateAvailable": false,
+    "savedExactApiNetworkDraft": true,
+    "savedNetworkHosts": [
+      "api.github.com",
+      "trellisv2-cjekr1a5x-hussain-9c72.vercel.app",
+      "trellisv2-git-sd-01-performance-thread-deletion-hussain-9c72.vercel.app",
+      "api.vercel.com",
+      "api.supabase.com"
+    ],
+    "optionalSecureApiRequirementsSaved": ["VERCEL_TOKEN", "SUPABASE_ACCESS_TOKEN"],
+    "platformApiAuthenticationUsable": false
+  },
+  "probes": [
+    {
+      "url": "https://trellisv2-cjekr1a5x-hussain-9c72.vercel.app/",
+      "attemptedAt": "2026-10-06T17:44:54.208646+00:00",
+      "method": "GET",
+      "client": "Python urllib via configured HTTPS proxy",
+      "responseHttpStatus": 302,
+      "redirectHost": "vercel.com",
+      "redirectPath": "/sso-api",
+      "appPageReached": false,
+      "transportFailure": null
+    },
+    {
+      "url": "https://trellisv2-git-sd-01-performance-thread-deletion-hussain-9c72.vercel.app/",
+      "attemptedAt": "2026-10-06T17:44:54.575908+00:00",
+      "method": "GET",
+      "client": "Python urllib via configured HTTPS proxy",
+      "responseHttpStatus": 302,
+      "redirectHost": "vercel.com",
+      "redirectPath": "/sso-api",
+      "appPageReached": false,
+      "transportFailure": null
+    }
+  ],
+  "observations": [],
+  "summaries": [
+    {
+      "route": "/",
+      "category": "initial",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/",
+      "category": "first",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/",
+      "category": "repeat",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/calendar",
+      "category": "initial",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/calendar",
+      "category": "first",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/calendar",
+      "category": "repeat",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/chat",
+      "category": "initial",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/chat",
+      "category": "first",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/chat",
+      "category": "repeat",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/settings",
+      "category": "initial",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/settings",
+      "category": "first",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    },
+    {
+      "route": "/settings",
+      "category": "repeat",
+      "n": 0,
+      "feedbackMedianMs": null,
+      "feedbackP95Ms": null,
+      "usableMedianMs": null,
+      "usableP95Ms": null
+    }
+  ],
+  "browser": {
+    "measured": false,
+    "version": null,
+    "device": null,
+    "networkConditions": null,
+    "coldWarmState": null
+  },
+  "liveChatRequests": 0,
+  "liveProviderCalls": 0,
+  "testThreadsCreated": 0,
+  "threadsDeleted": 0,
+  "conclusion": "No deployed application timing, database identity, region, chat, or deletion result was observed. Vercel SSO redirects are access evidence, not application latency.",
+  "platformApiProbes": [
+    {
+      "service": "Vercel",
+      "attemptedAt": "2026-10-06T17:53:11.261827+00:00",
+      "method": "GET",
+      "httpStatus": 403,
+      "transportFailure": null,
+      "responseBodyRecorded": false
+    },
+    {
+      "service": "Supabase",
+      "attemptedAt": "2026-10-06T17:53:11.646598+00:00",
+      "method": "GET",
+      "httpStatus": 401,
+      "transportFailure": null,
+      "responseBodyRecorded": false
+    }
+  ]
+}
