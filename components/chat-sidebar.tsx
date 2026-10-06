@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { PlusIcon, TrashIcon } from './icons';
 
 export interface ThreadSummary {
@@ -29,10 +29,10 @@ export function ChatSidebar({ threads, activeId }: { threads: ThreadSummary[]; a
   const currentActiveId = useRef(activeId);
   const mounted = useRef(true);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     currentActiveId.current = activeId;
   }, [activeId]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;

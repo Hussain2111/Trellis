@@ -131,6 +131,31 @@ test('completion of an old active deletion does not navigate away from a newly s
   await expect(page).toHaveURL(new RegExp('thread=' + ids[1] + '$'));
 });
 
+test('an unmounted sidebar cannot redirect a different main tab when deletion completes', async ({
+  page,
+}) => {
+  let release!: () => void;
+  const blocked = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(`**/api/chat/threads/${ids[0]}`, async (route) => {
+    await blocked;
+    await route.continue();
+  });
+  await remove(page, 0);
+  await page
+    .getByRole('navigation', { name: 'Main' })
+    .getByTitle('Calendar', { exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Today', exact: true })).toBeEnabled();
+  release();
+  await expect
+    .poll(async () => (await sql`SELECT id FROM chat_threads WHERE id = ${ids[0]!}`).length)
+    .toBe(0);
+  await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(/\/calendar$/);
+});
+
 test('main-tab measurements separate first/repeat visits and contain only metadata', async ({
   page,
 }) => {
