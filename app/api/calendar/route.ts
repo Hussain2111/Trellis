@@ -29,19 +29,20 @@ const entrySchema = z.object({
   notes: z.string().max(2000).optional(),
 });
 
-export async function GET(): Promise<Response> {
-  return respond(async () => {
+export async function GET(request: Request): Promise<Response> {
+  const handler = async () => {
     // The overdue count moved to /api/alerts, which serves the banners and the
     // nav badge from one request. Two endpoints answering the same question is
     // two places for the answer to drift.
     const accountId = await selfAccountId();
     if (!accountId) return Response.json({ entries: [] });
     return Response.json({ entries: await listEntries(accountId) });
-  });
+  };
+  return respond(handler, { route: '/api/calendar', request });
 }
 
 export async function POST(request: Request): Promise<Response> {
-  return respond(async () => {
+  const handler = async () => {
     const accountId = await selfAccountId();
     if (!accountId) return Response.json({ error: 'no_account' }, { status: 409 });
 
@@ -54,5 +55,6 @@ export async function POST(request: Request): Promise<Response> {
 
     const entry = await createEntry(accountId, { ...rest, scheduledFor: when });
     return Response.json({ entry });
-  });
+  };
+  return respond(handler, { route: '/api/calendar', request });
 }

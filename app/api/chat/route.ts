@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db/client';
 import { modelRuns } from '@/lib/db/schema';
 import { chatTools } from '@/lib/chat/tools';
+import { count, measure, requestId, startStage } from '@/lib/performance/server';
 import {
   appendMessage,
   buildSystemPrompt,
@@ -43,7 +44,8 @@ const bodySchema = z.object({
  * defeat the point. Tool progress could stream; the answer cannot.
  */
 export async function POST(request: Request): Promise<Response> {
-  return respond(async () => {
+  const handler = async () => {
+    const finishPreflight = startStage('preflight');
     const parsed = bodySchema.safeParse(await request.json());
     if (!parsed.success) return Response.json({ error: 'bad request' }, { status: 400 });
     const { threadId, message } = parsed.data;
@@ -71,6 +73,7 @@ export async function POST(request: Request): Promise<Response> {
 
     await appendMessage({ threadId, role: 'user', content: message });
     const history = await threadMessages(threadId);
+    count('historyMessages', history.length);
     // Titles the thread from the first thing the user says, and only if it has no
     // title — a thread opened from a note was already named after the note.
     if (history.filter((m) => m.role === 'user').length === 1) await titleThread(threadId, message);
@@ -138,8 +141,11 @@ export async function POST(request: Request): Promise<Response> {
 
       const started = Date.now();
       let attemptedCalls = 0;
+      const modelTimers = new Map<string, (failed?: boolean) => void>();
+      const toolTimers = new Map<string, (failed?: boolean) => void>();
       const maxSteps = Math.min(maxStepsFor(caps), headroom.limit - headroom.used);
       try {
+        finishPreflight();
         const result = await generateText({
           model: model.model,
           system,
@@ -150,11 +156,27 @@ export async function POST(request: Request): Promise<Response> {
           // 5-a-minute budget from inside a single call, where no pre-flight
           // check can reach.
           ...chatGenerationOptions<typeof tools>(maxSteps, system),
-          onLanguageModelCallStart: () => {
+          onLanguageModelCallStart: ({ callId }) => {
             attemptedCalls += 1;
+            count('modelCalls');
+            modelTimers.set(callId, startStage('model'));
+          },
+          onLanguageModelCallEnd: ({ callId, usage }) => {
+            modelTimers.get(callId)?.();
+            modelTimers.delete(callId);
+            count('inputTokens', usage.inputTokens ?? 0);
+            count('outputTokens', usage.outputTokens ?? 0);
+          },
+          onToolExecutionStart: ({ toolCall }) => {
+            toolTimers.set(toolCall.toolCallId, startStage('tool'));
+          },
+          onToolExecutionEnd: ({ toolCall, toolOutput }) => {
+            toolTimers.get(toolCall.toolCallId)?.(toolOutput.type === 'tool-error');
+            toolTimers.delete(toolCall.toolCallId);
           },
           onStepEnd: (step) => {
             console.info('[chat.step]', {
+              requestId: requestId(),
               threadId,
               provider: model.provider,
               ...chatStepDiagnostic(step),
@@ -173,9 +195,12 @@ export async function POST(request: Request): Promise<Response> {
           step.toolResults.map((r) => (r as { output?: unknown }).output),
         );
 
+        const finishValidation = startStage('validation');
         const { answer, dropped, outcome, emptyBeforeValidation, validatedTextLength } =
           validateChatAnswer(result.text, evidence);
+        finishValidation();
         console.info('[chat.response]', {
+          requestId: requestId(),
           threadId,
           provider: model.provider,
           steps: result.steps.length,
@@ -187,27 +212,31 @@ export async function POST(request: Request): Promise<Response> {
           outcome,
         });
 
-        await appendMessage({
-          threadId,
-          role: 'assistant',
-          content: answer,
-          toolCalls: result.steps.flatMap((step) => step.toolCalls.map((c) => c.toolName)),
-          validation: dropped.length > 0 ? { dropped } : null,
-        });
+        await measure('persistence', () =>
+          appendMessage({
+            threadId,
+            role: 'assistant',
+            content: answer,
+            toolCalls: result.steps.flatMap((step) => step.toolCalls.map((c) => c.toolName)),
+            validation: dropped.length > 0 ? { dropped } : null,
+          }),
+        );
 
-        await db()
-          .insert(modelRuns)
-          .values({
-            accountId,
-            purpose: 'chat',
-            provider: model.provider,
-            model: model.modelId,
-            promptTokens: result.usage?.inputTokens ?? null,
-            completionTokens: result.usage?.outputTokens ?? null,
-            status: 'ok',
-            calls: result.steps.length,
-            durationMs: Date.now() - started,
-          });
+        await measure('persistence', () =>
+          db()
+            .insert(modelRuns)
+            .values({
+              accountId,
+              purpose: 'chat',
+              provider: model.provider,
+              model: model.modelId,
+              promptTokens: result.usage?.inputTokens ?? null,
+              completionTokens: result.usage?.outputTokens ?? null,
+              status: 'ok',
+              calls: result.steps.length,
+              durationMs: Date.now() - started,
+            }),
+        );
 
         return Response.json({
           answer,
@@ -221,24 +250,28 @@ export async function POST(request: Request): Promise<Response> {
           via: model.isFallback ? `${model.provider}:${model.modelId}` : undefined,
         });
       } catch (error) {
+        for (const finish of modelTimers.values()) finish(true);
+        for (const finish of toolTimers.values()) finish(true);
         const quota = asQuotaError(error);
 
-        await db()
-          .insert(modelRuns)
-          .values({
-            accountId,
-            purpose: 'chat',
-            provider: model.provider,
-            model: model.modelId,
-            status: 'error',
-            error: error instanceof Error ? error.message : String(error),
-            // A rejected call still reached the provider and still counted
-            // against the limit there. Recording it as zero would let the
-            // ledger drift below what is actually being enforced, which is how
-            // a guard gets quietly overrun.
-            calls: Math.max(1, attemptedCalls),
-            durationMs: Date.now() - started,
-          });
+        await measure('persistence', () =>
+          db()
+            .insert(modelRuns)
+            .values({
+              accountId,
+              purpose: 'chat',
+              provider: model.provider,
+              model: model.modelId,
+              status: 'error',
+              error: error instanceof Error ? error.message : String(error),
+              // A rejected call still reached the provider and still counted
+              // against the limit there. Recording it as zero would let the
+              // ledger drift below what is actually being enforced, which is how
+              // a guard gets quietly overrun.
+              calls: Math.max(1, attemptedCalls),
+              durationMs: Date.now() - started,
+            }),
+        );
 
         if (quota) {
           lastRefusal = {
@@ -275,7 +308,8 @@ export async function POST(request: Request): Promise<Response> {
           : {}),
       },
     );
-  });
+  };
+  return respond(handler, { route: '/api/chat', request });
 }
 
 /** Seconds are the right unit for a minute and the wrong one for eleven hours. */

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { loadAlerts } from '@/lib/client/alerts';
 import { CalendarIcon, ChatIcon, DashboardIcon, SettingsIcon } from './icons';
+import { navigationFeedback, startNavigation } from '@/lib/performance/browser';
 
 /**
  * Three destinations, as icons.
@@ -31,6 +32,9 @@ const ITEMS = [
  */
 function Pending() {
   const { pending } = useLinkStatus();
+  useEffect(() => {
+    if (pending) return navigationFeedback('pending');
+  }, [pending]);
   if (!pending) return null;
   return (
     <span
@@ -61,6 +65,17 @@ export function Nav() {
             <li key={href} className="flex-1 sm:flex-none">
               <Link
                 href={href}
+                onClick={(event) => {
+                  if (
+                    event.button === 0 &&
+                    !event.metaKey &&
+                    !event.ctrlKey &&
+                    !event.shiftKey &&
+                    !event.altKey &&
+                    pathname !== href
+                  )
+                    startNavigation(href);
+                }}
                 aria-current={active ? 'page' : undefined}
                 title={label}
                 className={`group relative flex flex-col items-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors sm:size-11 sm:justify-center  sm:rounded-xl sm:p-0 ${
@@ -85,6 +100,17 @@ export function Nav() {
         <li className="flex-1 sm:mt-auto sm:flex-none sm:pb-4">
           <Link
             href="/settings"
+            onClick={(event) => {
+              if (
+                event.button === 0 &&
+                !event.metaKey &&
+                !event.ctrlKey &&
+                !event.shiftKey &&
+                !event.altKey &&
+                pathname !== '/settings'
+              )
+                startNavigation('/settings');
+            }}
             title="Settings"
             className={`group relative flex flex-col items-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors sm:size-11 sm:justify-center sm:rounded-xl sm:p-0 ${
               pathname === '/settings'

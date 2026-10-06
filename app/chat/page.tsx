@@ -6,14 +6,15 @@ import { ChatSidebar, type ThreadSummary } from '@/components/chat-sidebar';
 import { createThread, listThreads, selfAccountId, threadMessages } from '@/lib/chat/threads';
 import { EmptyState, Panel, PanelHeader } from '@/components/ui/primitives';
 import { relativeRiyadh } from '@/lib/time';
+import { preparePage } from '@/lib/performance/page';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ChatPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ thread?: string }>;
-}) {
+export default function ChatPage(input: { searchParams: Promise<{ thread?: string }> }) {
+  return preparePage('/chat', () => renderChat(input));
+}
+
+async function renderChat({ searchParams }: { searchParams: Promise<{ thread?: string }> }) {
   const accountId = await selfAccountId();
 
   if (!accountId) {

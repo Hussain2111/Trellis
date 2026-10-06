@@ -11,10 +11,11 @@ export const dynamic = 'force-dynamic';
  * matter, but not enough to hold the whole app behind a database round trip on
  * every navigation.
  */
-export async function GET(): Promise<Response> {
-  return respond(async () => {
+export async function GET(request: Request): Promise<Response> {
+  const handler = async () => {
     const accountId = await selfAccountId();
     if (!accountId) return Response.json({ alerts: [], overdue: 0 });
     return Response.json(await currentAlerts(accountId));
-  });
+  };
+  return respond(handler, { route: '/api/alerts', request });
 }

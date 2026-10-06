@@ -12,7 +12,13 @@
  * resolving the account, a query against a column a migration has not created
  * yet — is inside this one.
  */
-export async function respond(handler: () => Promise<Response>): Promise<Response> {
+import { timedResponse, type TimedRoute } from '../performance/server';
+
+export async function respond(
+  handler: () => Promise<Response>,
+  timing?: { route: TimedRoute; request: Request },
+): Promise<Response> {
+  if (timing) return timedResponse(timing.route, timing.request, () => respond(handler));
   try {
     return await handler();
   } catch (error) {

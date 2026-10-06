@@ -6,10 +6,15 @@ import { StickyNote } from '@/components/sticky-note';
 import { RefreshInsights } from '@/components/refresh-insights';
 import { EmptyState, Panel, PanelHeader, Stat, sampleNote } from '@/components/ui/primitives';
 import { formatRiyadhDate } from '@/lib/time';
+import { preparePage } from '@/lib/performance/page';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return preparePage('/', renderDashboard);
+}
+
+async function renderDashboard() {
   const accountId = await selfAccountId();
 
   if (!accountId) {
