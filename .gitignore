@@ -13,3 +13,8 @@ backup-*.sql.gz
 
 # Test-only database. Never point this at Supabase.
 .env.test.local
+
+# Metadata-only local benchmarks and browser-runner output.
+benchmark-results/
+test-results/
+playwright-report/

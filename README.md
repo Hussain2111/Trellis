@@ -135,6 +135,10 @@ throwaway database.
 
 If you do have a local Postgres, `npm run verify:full` adds them.
 
+The production-build navigation benchmark and thread-deletion browser checks are documented in
+[`docs/performance-baseline.md`](docs/performance-baseline.md). They use fresh local databases
+with synthetic data and report first and repeat visits separately.
+
 > **The tests refuse to run against a non-local database.** They begin with
 > `truncate ... cascade`, and vitest loads `.env` — which on a machine that also
 > operates this app points at production Supabase. A guard in

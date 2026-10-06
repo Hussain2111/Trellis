@@ -11,9 +11,12 @@
  * visible change on the next frame, and the real page swaps in underneath when
  * it is ready.
  */
+import { LoadingFeedback } from '@/components/performance-markers';
+
 export default function Loading() {
   return (
     <div className="animate-pulse space-y-10" aria-busy="true" aria-label="Loading">
+      <LoadingFeedback />
       <div className="space-y-3">
         <div className="h-7 w-48 rounded-md bg-paper-sunk" />
         <div className="h-4 w-80 max-w-full rounded bg-paper-sunk" />

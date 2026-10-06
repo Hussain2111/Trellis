@@ -1,3 +1,4 @@
+import { preparePage } from '@/lib/performance/page';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { env } from '@/lib/env';
@@ -77,7 +78,11 @@ async function modelUsage(): Promise<
   }
 }
 
-export default async function SettingsPage() {
+export default function SettingsPage() {
+  return preparePage('/settings', renderSettings);
+}
+
+async function renderSettings() {
   const e = env();
   const caps = quotaCaps();
 

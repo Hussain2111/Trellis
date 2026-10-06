@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { env } from '../env';
 import * as schema from './schema';
+import { instrumentSql } from '../performance/database';
 
 /**
  * A small pool, created lazily and reused across invocations within a warm
@@ -33,7 +34,9 @@ export function db() {
       idle_timeout: 20,
       connect_timeout: 10,
     });
-    database = drizzle(sql, { schema });
+    database = drizzle(process.env.TRELLIS_PERFORMANCE === '1' ? instrumentSql(sql) : sql, {
+      schema,
+    });
   }
   return database;
 }

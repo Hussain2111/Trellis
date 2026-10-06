@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Markdown } from './markdown';
+import { performanceEnabled, startChatTiming } from '@/lib/performance/browser';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -33,6 +34,11 @@ export function ChatPanel({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const chatTiming = useRef<ReturnType<typeof startChatTiming> | null>(null);
+
+  useEffect(() => {
+    if (pending) return chatTiming.current?.feedback();
+  }, [pending]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,6 +47,9 @@ export function ChatPanel({
   async function send() {
     const text = input.trim();
     if (!text || pending) return;
+    const timing = startChatTiming();
+    chatTiming.current = timing;
+    let outcome: 'ok' | 'error' = 'error';
 
     setInput('');
     setError(null);
@@ -50,7 +59,10 @@ export function ChatPanel({
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          ...(performanceEnabled() ? { 'x-trellis-request-id': timing.requestId } : {}),
+        },
         body: JSON.stringify({ threadId, message: text }),
       });
 
@@ -65,6 +77,7 @@ export function ChatPanel({
         error?: string;
         message?: string;
       } | null = await res.json().catch(() => null);
+      timing.response();
 
       if (!res.ok || !body) {
         setError(
@@ -84,12 +97,14 @@ export function ChatPanel({
         ...m,
         { role: 'assistant', content: body.answer ?? '', dropped: body.dropped },
       ]);
+      outcome = 'ok';
     } catch {
       // Genuinely unreachable: the request never completed. Everything the
       // server said, including that it broke, is handled above.
       setError('Could not reach the server — the request never completed.');
     } finally {
       setPending(false);
+      timing.finish(outcome);
     }
   }
 

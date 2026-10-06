@@ -3,6 +3,7 @@ import { db } from '../db/client';
 import { accounts, chatMessages, chatThreads } from '../db/schema';
 import { renderChatSystem } from '../prompts/chat-system';
 import { accountOverview, insightCard } from './queries';
+import { count } from '../performance/server';
 
 /**
  * The one account's id, remembered for the life of a warm function.
@@ -19,7 +20,11 @@ import { accountOverview, insightCard } from './queries';
 let cachedAccountId: number | null = null;
 
 export async function selfAccountId(): Promise<number | null> {
-  if (cachedAccountId !== null) return cachedAccountId;
+  if (cachedAccountId !== null) {
+    count('accountCacheHits');
+    return cachedAccountId;
+  }
+  count('accountCacheMisses');
   const [row] = await db().select({ id: accounts.id }).from(accounts).limit(1);
   cachedAccountId = row?.id ?? null;
   return cachedAccountId;

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { PlusIcon, TrashIcon } from './icons';
 
 export interface ThreadSummary {
@@ -24,13 +24,27 @@ export function ChatSidebar({ threads, activeId }: { threads: ThreadSummary[]; a
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [confirming, setConfirming] = useState<number | null>(null);
+  const [errors, setErrors] = useState<Record<number, string>>({});
+  const deleting = useRef(new Set<number>());
+  const currentActiveId = useRef(activeId);
+  const mounted = useRef(true);
+
+  useLayoutEffect(() => {
+    currentActiveId.current = activeId;
+  }, [activeId]);
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   /**
    * Deleting used to wait on the request, then a navigation, then a full
    * re-render of a dynamic page — three server round trips before the row you
    * had already decided about left the screen. The row goes now and the request
-   * follows; if it fails the list comes back on the next render, which is the
-   * right way round for something the user has already committed to.
+   * follows. A failed request restores only its own row, so concurrent deletes
+   * cannot undo each other. Keep the active conversation open until confirmed.
    */
   const [removed, setRemoved] = useState<number[]>([]);
   const visible = threads.filter((thread) => !removed.includes(thread.id));
@@ -51,16 +65,37 @@ export function ChatSidebar({ threads, activeId }: { threads: ThreadSummary[]; a
     }
   }
 
-  function remove(id: number) {
+  async function remove(id: number) {
+    if (deleting.current.has(id)) return;
+    deleting.current.add(id);
     setConfirming(null);
     setRemoved((ids) => [...ids, id]);
-    void fetch(`/api/chat/threads/${id}`, { method: 'DELETE' }).then(() => {
-      // Only leave the page when the thread you were reading is the one that
-      // went. Otherwise the list is already right and a navigation would be a
-      // round trip for nothing.
-      if (id === activeId) router.push('/chat');
-      else router.refresh();
+    setErrors((previous) => {
+      const next = { ...previous };
+      delete next[id];
+      return next;
     });
+    let failure: string | null = null;
+    try {
+      const response = await fetch(`/api/chat/threads/${id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        failure = `Could not delete this chat (server error ${response.status}). Please try again.`;
+      } else if (mounted.current) {
+        // Selection may have changed while the request was pending.
+        if (id === currentActiveId.current) router.push('/chat');
+        router.refresh();
+      }
+    } catch {
+      failure =
+        'Could not reach the server. This chat is still listed; please try deleting it again.';
+    } finally {
+      deleting.current.delete(id);
+      if (failure && mounted.current) {
+        const message = failure;
+        setRemoved((ids) => ids.filter((removedId) => removedId !== id));
+        setErrors((previous) => ({ ...previous, [id]: message }));
+      }
+    }
   }
 
   return (
@@ -91,7 +126,7 @@ export function ChatSidebar({ threads, activeId }: { threads: ThreadSummary[]; a
                 <span className="min-w-0 flex-1 truncate text-ink-muted">Delete this chat?</span>
                 <button
                   type="button"
-                  onClick={() => remove(thread.id)}
+                  onClick={() => void remove(thread.id)}
                   className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-negative"
                 >
                   Delete
@@ -129,6 +164,11 @@ export function ChatSidebar({ threads, activeId }: { threads: ThreadSummary[]; a
               >
                 <TrashIcon className="size-4" />
               </button>
+              {errors[thread.id] ? (
+                <p role="alert" className="px-3 py-2 text-xs text-negative">
+                  {errors[thread.id]}
+                </p>
+              ) : null}
             </li>
           );
         })}

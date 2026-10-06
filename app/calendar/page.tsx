@@ -3,10 +3,15 @@ import { listEntries } from '@/lib/calendar/entries';
 import { MonthCalendar, type Entry } from '@/components/month-calendar';
 import { EmptyState, Panel, PanelHeader } from '@/components/ui/primitives';
 import { riyadhDayKey, riyadhMonthKey, riyadhTimeOfDay } from '@/lib/time';
+import { preparePage } from '@/lib/performance/page';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CalendarPage() {
+export default function CalendarPage() {
+  return preparePage('/calendar', renderCalendar);
+}
+
+async function renderCalendar() {
   const accountId = await selfAccountId();
 
   if (!accountId) {

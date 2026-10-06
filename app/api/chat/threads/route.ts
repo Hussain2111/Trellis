@@ -4,18 +4,19 @@ import { createThread, createThreadFromCard, listThreads, selfAccountId } from '
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(): Promise<Response> {
-  return respond(async () => {
+export async function GET(request: Request): Promise<Response> {
+  const handler = async () => {
     const accountId = await selfAccountId();
     if (!accountId) return Response.json({ threads: [] });
     return Response.json({ threads: await listThreads(accountId) });
-  });
+  };
+  return respond(handler, { route: '/api/chat/threads', request });
 }
 
 const bodySchema = z.object({ sourceCardId: z.number().int().optional() });
 
 export async function POST(request: Request): Promise<Response> {
-  return respond(async () => {
+  const handler = async () => {
     const accountId = await selfAccountId();
     if (!accountId) return Response.json({ error: 'no_account' }, { status: 409 });
 
@@ -29,5 +30,6 @@ export async function POST(request: Request): Promise<Response> {
       : await createThread(accountId);
 
     return Response.json({ thread });
-  });
+  };
+  return respond(handler, { route: '/api/chat/threads', request });
 }

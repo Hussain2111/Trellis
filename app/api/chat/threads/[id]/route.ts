@@ -4,10 +4,10 @@ import { respond } from '@/lib/api/respond';
 export const dynamic = 'force-dynamic';
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  return respond(async () => {
+  const handler = async () => {
     const accountId = await selfAccountId();
     if (!accountId) return Response.json({ error: 'no_account' }, { status: 409 });
 
@@ -18,5 +18,6 @@ export async function DELETE(
     // lookup followed by a trusting removal.
     await deleteThread(accountId, id);
     return Response.json({ ok: true });
-  });
+  };
+  return respond(handler, { route: '/api/chat/threads/[id]', request });
 }
