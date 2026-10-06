@@ -38,6 +38,8 @@ export interface ServerTiming {
   outcome: 'ok' | 'error';
   stages: Partial<Record<Stage, StageSummary>>;
   counters: Partial<Record<Counter, number>>;
+  databaseQueries: { ordinal: number; offsetMs: number; durationMs: number; failed: boolean }[];
+  queryTimingsTruncated: boolean;
   otherRequestMs: number;
 }
 interface Scope {
@@ -155,6 +157,16 @@ export async function timed<T>(route: TimedRoute, work: () => Promise<T>, incomi
           ]),
         ),
         counters: { ...current.counters },
+        databaseQueries: [...(current.intervals.database ?? [])]
+          .sort((a, b) => a.start - b.start)
+          .slice(0, 100)
+          .map((interval, index) => ({
+            ordinal: index + 1,
+            offsetMs: round(interval.start),
+            durationMs: round(interval.end - interval.start),
+            failed: interval.failed,
+          })),
+        queryTimingsTruncated: (current.intervals.database?.length ?? 0) > 100,
         otherRequestMs: round(Math.max(0, duration - generation.wallMs)),
       };
       console.info('[performance]', JSON.stringify(result));

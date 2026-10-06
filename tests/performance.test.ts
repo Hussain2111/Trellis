@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import postgres from 'postgres';
+import { createServer } from 'node:net';
 import { instrumentSql } from '../lib/performance/database';
 import { count, measure, summarize, timed, timedResponse } from '../lib/performance/server';
-import { localPostgresUrl } from '../scripts/benchmark/fixture';
+import { localPostgresUrl, startServer } from '../scripts/benchmark/fixture';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -10,6 +11,22 @@ afterEach(() => {
 });
 
 describe('metadata-only performance measurements', () => {
+  it('refuses an occupied benchmark port before launching or sending application requests', async () => {
+    const listener = createServer((socket) => socket.end());
+    await new Promise<void>((resolve) => listener.listen(0, '127.0.0.1', resolve));
+    try {
+      const address = listener.address();
+      if (!address || typeof address === 'string') throw new Error('Expected a local TCP port');
+      await expect(
+        startServer('postgres://postgres@127.0.0.1/unused', address.port),
+      ).rejects.toThrow('already in use');
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        listener.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+
   it('separates concurrent wall time from the sum of individual query times', () => {
     expect(
       summarize([
@@ -106,6 +123,10 @@ describe('metadata-only performance measurements', () => {
       });
       expect(value).toBe('unchanged');
       expect(metadata!.stages.database).toMatchObject({ count: 3, failed: 1 });
+      expect(metadata!.databaseQueries).toHaveLength(3);
+      expect(metadata!.databaseQueries.map((query) => query.ordinal)).toEqual([1, 2, 3]);
+      expect(metadata!.databaseQueries.filter((query) => query.failed)).toHaveLength(1);
+      expect(metadata!.queryTimingsTruncated).toBe(false);
     } finally {
       await client.end();
     }
